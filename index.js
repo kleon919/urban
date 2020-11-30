@@ -4,6 +4,7 @@ const express = require("express");
 const providers = require('./geocoding-providers');
 const findArea = require('./polygons');
 
+
 const app = express();
 
 const validate = (req, res, next) => {
@@ -17,26 +18,25 @@ const validate = (req, res, next) => {
 const retryAcrossProviders = async (providers, address) => {
     const currentProvider = providers.shift();
     let res = await currentProvider.request(address).catch(e => e);
-    if (res.ok) return res
+    if (res.status === 'OK') return res;
     return (providers.length > 0)
         ? retryAcrossProviders(providers, address)
         : res; // return predefined not find msg
-}
-
-const keepWhatYouNeed = res => res.results.reduce((acc, val) => {
-
-}, {})
+};
 
 // Function to handle the info path
 app.get('/info', validate, async (req, res) => {
 
     // Access the provided 'address' query parameter
-    let address = req.query.address;
+    let search = req.query.address;
 
     try {
-        let result = await retryAcrossProviders([...providers], encodeURI(address));
-        let {name} = findArea([-0.10422, 51.53196]); // todo
-        return res.send({name, result});
+        let response = await retryAcrossProviders([...providers], encodeURI(search));
+        if (response.status === 'OK'){
+            let {name} = findArea([response.location.long, response.location.lat]);
+            response.location.serviceArea = name;
+        }
+        return res.send(response);
     } catch (e) {
         console.log(e)
         res.send(500)
