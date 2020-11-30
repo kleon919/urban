@@ -4,7 +4,6 @@ const express = require("express");
 const providers = require('./geocoding-providers');
 const findArea = require('./polygons');
 
-
 const app = express();
 
 const validate = (req, res, next) => {
@@ -21,7 +20,7 @@ const retryAcrossProviders = async (providers, address) => {
     if (res.status === 'OK') return res;
     return (rest.length > 0)
         ? retryAcrossProviders(rest, address)
-        : res; // return predefined not find msg
+        : res;
 };
 
 // Function to handle the info path
