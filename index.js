@@ -16,11 +16,11 @@ const validate = (req, res, next) => {
 // Responds with success ('OK' status) only when a valuable result has been returned.
 // In other case, proceeds to the next provider, if exists or responds with 'NOT_FOUND' status
 const retryAcrossProviders = async (providers, address) => {
-    const currentProvider = providers.shift();
+    const [currentProvider, ...rest] = providers;
     let res = await currentProvider.request(address).catch(e => e);
     if (res.status === 'OK') return res;
-    return (providers.length > 0)
-        ? retryAcrossProviders(providers, address)
+    return (rest.length > 0)
+        ? retryAcrossProviders(rest, address)
         : res; // return predefined not find msg
 };
 
@@ -31,7 +31,7 @@ app.get('/info', validate, async (req, res) => {
     let search = req.query.address;
 
     try {
-        let response = await retryAcrossProviders([...providers], encodeURI(search));
+        let response = await retryAcrossProviders(providers, encodeURI(search));
         if (response.status === 'OK'){
             let {name} = findArea([response.location.long, response.location.lat]);
             response.location.serviceArea = name;
